@@ -31,6 +31,50 @@ function processCommand(command: CommandType, params: CommandParams = {}): strin
 }
 
 /**
+ * `err_t` is transmitted as a plain decimal integer, but it is the device's
+ * internal hex fault-code register (confirmed live on a real MI0800: raw
+ * values 1321 and 1297 correspond to hex 0x529/0x511, matching the codes
+ * below at the moments PV1/PV2 were genuinely at those voltage conditions).
+ * Codes are sourced from the official MST-MI series manual
+ * (https://manuals.plus/marstek/mst-mi-series-single-phase-microinverter-manual);
+ * only 0x529 (1321) and 0x511 (1297) have been cross-checked against a live
+ * device so far, the rest are taken from the manual as-is. Keys are the
+ * decimal string as received over MQTT (i.e. the hex code already converted).
+ */
+const ERROR_TYPE_STATUS: Record<string, string> = {
+  '0': 'No Error',
+  '1028': 'Overheat Protection', // 0x404
+  '1030': 'Grid Overvoltage', // 0x406
+  '1032': 'Grid Undervoltage', // 0x408
+  '1033': 'Grid Overfrequency', // 0x409
+  '1040': 'Grid Underfrequency', // 0x410
+  '1044': 'Grid Islanding Detected', // 0x414
+  '1045': 'Grid Overvoltage', // 0x415
+  '1046': 'Reconnected Grid Frequency Out Of Range', // 0x416
+  '1047': 'Reconnected Grid Frequency Out Of Range', // 0x417
+  '1048': 'PV-1 Overcurrent', // 0x418
+  '1049': 'PV-2 Overcurrent', // 0x419
+  '1056': 'PE Grounding Anomaly', // 0x420
+  '1057': 'PE Grounding Anomaly', // 0x421
+  '1058': 'Grid Fluctuations', // 0x422
+  '1296': 'PV-1 No Input', // 0x510
+  '1297': 'PV-2 No Input', // 0x511 - confirmed live 2026-08-25
+  '1312': 'PV-2 Input Overvoltage', // 0x520
+  '1313': 'PV-2 Input Undervoltage', // 0x521
+  '1320': 'PV-1 Input Overvoltage', // 0x528
+  '1321': 'PV-1 Input Undervoltage', // 0x529 - confirmed live 2026-08-25
+  '1328': 'Temperature Limit', // 0x530
+  '1034': 'Equipment Failure', // 0x40A
+  '1035': 'Equipment Failure', // 0x40B
+  '1036': 'Equipment Failure', // 0x40C
+  '1037': 'Equipment Failure', // 0x40D
+  '1038': 'Equipment Failure', // 0x40E
+  '1039': 'Equipment Failure', // 0x40F
+  '1050': 'Equipment Failure', // 0x41A
+  '1051': 'Equipment Failure', // 0x41B
+};
+
+/**
  * Check if the message is an HMI inverter runtime info message
  */
 function isHmiInverterRuntimeInfoMessage(values: Record<string, string>): boolean {
@@ -419,6 +463,16 @@ function registerRuntimeInfoMessage(message: BuildMessageFn) {
         id: 'error_type',
         name: 'Error Type',
         icon: 'mdi:alert-circle',
+      }),
+    );
+
+    field({ key: 'err_t', path: ['errorStatus'], transform: map(ERROR_TYPE_STATUS, 'Unknown') });
+    advertise(
+      ['errorStatus'],
+      sensorComponent<string>({
+        id: 'error_status',
+        name: 'Error Status',
+        icon: 'mdi:alert-circle-outline',
       }),
     );
 

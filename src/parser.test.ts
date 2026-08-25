@@ -560,6 +560,7 @@ describe('MQTT Message Parser', () => {
     // Check device status
     expect(result).toHaveProperty('chipTemperature', 33);
     expect(result).toHaveProperty('errorType', 0);
+    expect(result).toHaveProperty('errorStatus', 'No Error');
     expect(result).toHaveProperty('errorCount', 0);
     expect(result).toHaveProperty('errorDetails', 0);
     expect(result).toHaveProperty('firmwareVersion', 120);
@@ -656,6 +657,7 @@ describe('MQTT Message Parser', () => {
 
     // Check error conditions are properly parsed
     expect(result).toHaveProperty('errorType', 1);
+    expect(result).toHaveProperty('errorStatus', 'Unknown'); // 0x1 is not a documented fault code
     expect(result).toHaveProperty('errorCount', 3);
     expect(result).toHaveProperty('errorDetails', 255);
 
@@ -665,6 +667,36 @@ describe('MQTT Message Parser', () => {
     expect(result).toHaveProperty('gridFrequency', 49.8);
     expect(result).toHaveProperty('pv1Voltage', 30.0);
     expect(result).toHaveProperty('pv2Current', 0.6);
+  });
+
+  test('should decode HMI inverter errorType into a human-readable errorStatus', () => {
+    // err_t is transmitted as a plain decimal integer that is actually the
+    // device's internal hex fault-code register. 1321 == 0x529 and
+    // 1297 == 0x511, both confirmed live against a real MI0800 (see
+    // ERROR_TYPE_STATUS in hmiInverter.ts for sourcing).
+    const baseFields =
+      'ele_d=1,ele_s=1,ele_m=1,pv1_v=0,pv1_i=0,pv1_p=0,pv1_s=0,pv2_v=0,pv2_i=0,pv2_p=0,pv2_s=0,grd_f=5000,grd_v=2300,grd_s=0,grd_o=0,chp_t=25,err_c=0,err_d=0,ver_s=107';
+
+    const undervoltage = parseMessage(`${baseFields},err_t=1321`, 'HMI-1', 'decode_test_1') as {
+      data: HmiInverterDeviceData;
+    };
+    expect(undervoltage.data).toHaveProperty('errorType', 1321);
+    expect(undervoltage.data).toHaveProperty('errorStatus', 'PV-1 Input Undervoltage');
+
+    const noInput = parseMessage(`${baseFields},err_t=1297`, 'HMI-1', 'decode_test_2') as {
+      data: HmiInverterDeviceData;
+    };
+    expect(noInput.data).toHaveProperty('errorType', 1297);
+    expect(noInput.data).toHaveProperty('errorStatus', 'PV-2 No Input');
+
+    // A code not present in the manual-sourced table falls back to a plain
+    // "Unknown" label rather than throwing or silently dropping the field -
+    // the raw errorType sensor still carries the real number for lookup.
+    const undocumented = parseMessage(`${baseFields},err_t=9999`, 'HMI-1', 'decode_test_3') as {
+      data: HmiInverterDeviceData;
+    };
+    expect(undocumented.data).toHaveProperty('errorType', 9999);
+    expect(undocumented.data).toHaveProperty('errorStatus', 'Unknown');
   });
 
   test('should parse Jupiter message correctly', () => {
