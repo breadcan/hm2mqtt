@@ -11,7 +11,7 @@ import {
   selectComponent,
   switchComponent,
 } from '../homeAssistantDiscovery.js';
-import { number, divide, identity, equalsBoolean, map } from '../transforms.js';
+import { number, divide, identity, equalsBoolean, notEqualsBoolean, map } from '../transforms.js';
 
 /**
  * Command types supported by the HMI inverter (Marstek HMI family)
@@ -486,6 +486,38 @@ function registerRuntimeInfoMessage(message: BuildMessageFn) {
       }),
     );
 
+    // Deriving "is this a real problem" from err_c rather than from err_t:
+    // observed live, err_c stayed 0 through an extended period where err_t
+    // showed a PV-input condition code (see ERROR_TYPE_STATUS) that was
+    // really just the panel being below its startup voltage - not a fault by
+    // the device's own accounting. err_c only incremented once a real trip
+    // happened (grid relay opened at the same time). That means the device's
+    // firmware already distinguishes informational conditions from counted
+    // faults, so this reuses that distinction instead of guessing severity
+    // per err_t code ourselves. Not yet confirmed whether err_c ever
+    // resets/decrements after a fault clears, or is a lifetime counter - if
+    // it never resets, this sensor would latch "problem" forever after the
+    // first fault in the device's life. Needs a live recovery cycle to
+    // verify before relying on this for anything beyond visibility.
+    field({ key: 'err_c', path: ['errorActive'], transform: notEqualsBoolean('0') });
+    advertise(
+      ['errorActive'],
+      binarySensorComponent({
+        id: 'error_active',
+        name: 'Error Active',
+        device_class: 'problem',
+      }),
+    );
+
+    // Left as a raw passthrough deliberately. Observed live on a real MI0800:
+    // while err_t was 1321/1297 (PV-1/PV-2 codes, see ERROR_TYPE_STATUS
+    // above), err_d closely tracked pv2_v's raw value - but PV2 had no panel
+    // wired to it at all, while PV1 (which did) was the channel the active
+    // code actually named. So err_d is not "the voltage of whichever channel
+    // the current error refers to" - that theory is disproven, not just
+    // unconfirmed. Its behavior also changed completely once err_t moved to
+    // a different (grid-fault) code family, jumping to unrelated large
+    // values. Mechanism unknown; not attempting a decode until it is.
     field({ key: 'err_d', path: ['errorDetails'], transform: number() });
     advertise(
       ['errorDetails'],

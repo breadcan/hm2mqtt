@@ -5,6 +5,7 @@
 
 - Support the `VNSEMINI-X` device type (e.g. `VNSEMINI-0`): the Marstek Venus E Mini. Monitoring only. Beta: some values may be wrong and the sensors may still change (discussion #425, PR #429, PR #430, PR #433)
 - HMI inverters (MI800/HMI-2000): New *Error Status* sensor shows a human-readable description of the current *Error Type* code (e.g. "PV-1 Input Undervoltage"), based on Marstek's official fault code documentation. A code not in that table shows as "Unknown" — the existing numeric *Error Type* sensor is unchanged and still shows the raw code. Experimental: only two codes have been confirmed against a live device so far, the rest come from the manual but haven't been independently verified yet
+- HMI inverters (MI800/HMI-2000): New *Error Active* sensor (a problem indicator) reflects whether the device currently has a real fault, separately from *Error Type*, which can show a code even for a benign condition like low panel voltage at dusk. Experimental: not yet confirmed whether this clears back to "off" after a fault is resolved
 
 ### Fixed
 

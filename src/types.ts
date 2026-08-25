@@ -944,6 +944,7 @@ export interface HmiInverterDeviceData extends BaseDeviceData {
   errorType?: number; // err_t
   errorStatus?: string; // err_t decoded, see ERROR_TYPE_STATUS in hmiInverter.ts
   errorCount?: number; // err_c
+  errorActive?: boolean; // err_c != 0
   errorDetails?: number; // err_d
   firmwareVersion?: number; // ver_s
 }

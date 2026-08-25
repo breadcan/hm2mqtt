@@ -562,6 +562,7 @@ describe('MQTT Message Parser', () => {
     expect(result).toHaveProperty('errorType', 0);
     expect(result).toHaveProperty('errorStatus', 'No Error');
     expect(result).toHaveProperty('errorCount', 0);
+    expect(result).toHaveProperty('errorActive', false);
     expect(result).toHaveProperty('errorDetails', 0);
     expect(result).toHaveProperty('firmwareVersion', 120);
 
@@ -659,6 +660,7 @@ describe('MQTT Message Parser', () => {
     expect(result).toHaveProperty('errorType', 1);
     expect(result).toHaveProperty('errorStatus', 'Unknown'); // 0x1 is not a documented fault code
     expect(result).toHaveProperty('errorCount', 3);
+    expect(result).toHaveProperty('errorActive', true);
     expect(result).toHaveProperty('errorDetails', 255);
 
     // Check other values are still correct
