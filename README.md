@@ -565,7 +565,7 @@ The device type can be one of the following:
 - **TPM-CN**: Marstek CT002-CN Smart Meter
 - **TPM2-X**: (e.g. TPM2-0) Marstek TPM2-100CT Smart Meter
 - **SMR-X**: Marstek CT003 Smart Meter Reader — `SMR-0` P1, `SMR-1` Infrared, `SMR-2` TIC
-- **HMI-X**: (e.g. HMI-1) Marstek HMI micro inverters, including the MI800 and the 4-PV HMI-2000
+- **HMI-X**: (e.g. HMI-1) Marstek HMI micro inverters, including the MI800 and the 4-PV HMI-2000. See [docs/hmi.md](docs/hmi.md) for the underlying MQTT protocol
 
 ## Using the Development Version
 
